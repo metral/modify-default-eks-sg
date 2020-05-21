@@ -10,6 +10,7 @@ export const kubeconfig = cluster.kubeconfig;
 // Get the results of the default security group created by AWS EKS.
 const defaultSecgroupId = cluster.core.cluster.vpcConfig.clusterSecurityGroupId;
 const defaultSecgroupResult = defaultSecgroupId.apply(id => {
+    if (!id) { return undefined; }
     return pulumi.output(aws.ec2.getSecurityGroup({
         filters: [{
             name: "group-id",
@@ -28,6 +29,7 @@ const defaultSecgroup = pulumi.all([
     cluster.core.vpcId,
     defaultSecgroupResult,
 ]).apply(([clusterName, vpcId, sgResult]) => {
+    if (!sgResult) { return undefined; }
     return new aws.ec2.SecurityGroup("default-eks-sg", {
         name: sgResult.name,
         description: sgResult.description,

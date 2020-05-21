@@ -8,16 +8,18 @@ const cluster = new eks.Cluster(projectName);
 export const kubeconfig = cluster.kubeconfig;
 
 // Get the results of the default security group created by AWS EKS.
-const defaultSecgroupNameGlob = `eks-cluster-sg-${projectName}-*`;
-const defaultSecgroupResult = pulumi.output(aws.ec2.getSecurityGroup({
-    filters: [{
-        name: "group-name",
-        values: [defaultSecgroupNameGlob],
-    }],
-    tags: cluster.core.cluster.name.apply(clusterName => ({
-        [`kubernetes.io/cluster/${clusterName}`]: "owned",
-    })),
-}, {async: true}));
+const defaultSecgroupId = cluster.core.cluster.vpcConfig.clusterSecurityGroupId;
+const defaultSecgroupResult = defaultSecgroupId.apply(id => {
+    return pulumi.output(aws.ec2.getSecurityGroup({
+        filters: [{
+            name: "group-id",
+            values: [id],
+        }],
+        tags: cluster.core.cluster.name.apply(clusterName => ({
+            [`kubernetes.io/cluster/${clusterName}`]: "owned",
+        })),
+    }, {async: true}));
+});
 
 // Import the default security group into Pulumi.
 // https://www.pulumi.com/docs/guides/adopting/import/#adopting-existing-resources
